@@ -93,11 +93,3 @@ O OpenWave orgulha-se de fazer parte e apoiar a comunidade de código aberto (*O
 ## 📄 Licença
 
 Este projeto está licenciado sob a Licença **MIT** - consulte o ficheiro [LICENSE](https://www.google.com/search?q=LICENSE) para obter mais detalhes.
-
-```
-
-### Dicas para o seu repositório:
-1. **Adicione as imagens:** Quando tiver a interface pronta, tire uns *prints* (capturas de ecrã), coloque-os numa pasta chamada `screenshots` no seu repositório e substitua os links do `via.placeholder.com` pelos caminhos relativos (ex: `screenshots/biblioteca.png`).
-2. **Ficheiro LICENSE:** Lembre-se de criar um ficheiro chamado `LICENSE` na raiz do GitHub e colar o texto padrão da licença MIT lá dentro, já que definiu isso no seu `Gtk.AboutDialog` e no README.
-
-```
