@@ -77,7 +77,7 @@ Os dados de configuração da aplicação (playlists criadas, caminhos indexados
 
 O OpenWave orgulha-se de fazer parte e apoiar a comunidade de código aberto (*Open Source*):
 
-* **Autor e Desenvolvedor Principal:** [Mateus Calixto]()
+* **Autor e Desenvolvedor Principal:** [Mateus Calixto](https://mateuscalixto.com.br)
 * **Design de Ícones:** [GNOME Project](https://www.gnome.org/) (fornecimento dos ícones simbólicos padrão utilizados na interface).
 * **Inspiração Visual:** [Linux Mint Desktop Team](https://linuxmint.com/) pela criação do deslumbrante tema e paleta de cores do ecossistema *Mint-Y*, servindo de base estrutural para os estilos CSS personalizados injetados na aplicação.
 
