@@ -11,40 +11,31 @@ O **OpenWave** é um leitor de áudio minimalista, rápido e elegante para Linux
 
 ## ✨ Funcionalidades
 
-- 📁 **Gestão de Biblioteca:** Selecione uma pasta local e o OpenWave organiza automaticamente as suas faixas por ordem alfabética.
-- 🔍 **Pesquisa Instantânea:** Filtre músicas instantaneamente por título ou artista enquanto digita.
-- 📂 **Amplo Suporte de Formatos:** Reproduz nativamente `.mp3`, `.wav`, `.ogg`, `.flac`, `.m4a`, `.aac`, `.opus`, e muito mais através do motor GStreamer.
-- ⭐ **Favoritos:** Marque as suas músicas preferidas com um único clique para acesso rápido.
-- 🎶 **Playlists Personalizadas:** Crie e faça a gestão de listas de reprodução dinâmicas.
-- 🎨 **Leitura de Metadados e Capas:** Extração automática de tags de áudio (título/artista) e exibição da capa do álbum integrada no ficheiro (*embedded art*).
-- 🧠 **Persistência de Estado:** Lembra-se da sua última pasta aberta, das suas playlists e dos seus favoritos entre sessões.
+- 📁 **Gestão de Biblioteca:** Selecione uma pasta local e o OpenWave organiza e indexa automaticamente as suas faixas por ordem alfabética.
+- 🔍 **Pesquisa Instantânea:** Filtre músicas instantaneamente por título, artista ou álbum enquanto digita, tanto na barra principal como no painel lateral de artistas.
+- 🗂️ **Navegação Inteligente por Artista/Álbum:** Interface segmentada que gera índices dinâmicos para isolar álbuns e artistas sem poluir a sua lista de reprodução principal.
+- ⭐ **Favoritos e Playlists:** Marque as suas faixas preferidas num clique e crie ou faça a gestão de playlists personalizadas diretamente através do menu contextual de botões.
+- 📂 **Amplo Suporte de Formatos:** Graças à integração nativa com o GStreamer, o leitor reproduz ficheiros `.mp3`, `.wav`, `.ogg`, `.flac`, `.m4a`, `.aac`, `.opus`, `.wma`, `.aiff`, `.aif`, `.alac`, `.mp2` e `.mka`.
+- 🖼️ **Leitura Automatizada de Metadados:** Extração e renderização inteligente de capas de álbuns incorporadas (tags APIC/id3/covr) e tags de texto via Mutagen.
 
 ---
 
-## 🚀 Como Executar
+## 🚀 Instalação e Execução
 
-### 1. Pré-requisitos (Dependências do Sistema)
+O projeto inclui um **Assistente Gráfico de Configuração** (`installer.py`) que facilita tanto a instalação inicial (com criação automática de atalhos e ficheiros `.desktop`) como a desinstalação completa do sistema do utilizador.
 
-Como o OpenWave utiliza a biblioteca gráfica nativa do sistema e o GStreamer, precisa de instalar as dependências de introspeção do PyGObject no seu sistema Linux.
+### Pré-requisitos (Ubuntu / Debian / Linux Mint)
 
-**No Linux Mint / Ubuntu / Debian:**
+Antes de executar, certifique-se de que tem instaladas as dependências do sistema para o PyGObject, GStreamer e a biblioteca de manipulação de metadados `mutagen`:
 
 ```bash
 sudo apt update
-sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-gstreamer-1.0 gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly
+sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-gst-plugins-base-1.0 gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly
+pip install mutagen
 
 ```
 
-**No Arch Linux:**
-
-```bash
-sudo pacman -S python-gobject gtk3 gstreamer gst-plugins-good gst-plugins-ugly
-
-```
-
-### 2. Clonar e Executar
-
-Clone este repositório para a sua máquina local e execute o ficheiro principal:
+### Clonar e Instalar
 
 ```bash
 # Clonar o repositório
@@ -53,30 +44,32 @@ git clone [https://github.com/openwave-player/openwave.git](https://github.com/o
 # Entrar na pasta
 cd openwave
 
-# Executar a aplicação
+# Executar o assistente gráfico de instalação
 python3 installer.py
 
 ```
+
+O assistente encarregar-se-á de copiar os ficheiros para a sua pasta local e disponibilizar o atalho no menu de aplicações do seu ambiente de desktop.
 
 ---
 
 ## ⚙️ Configuração e Armazenamento
 
-Os dados de configuração da aplicação (playlists, caminho da biblioteca e favoritos) são guardados de forma limpa no diretório padrão do utilizador, seguindo as especificações XDG:
+Os dados de configuração da aplicação (playlists criadas, caminhos indexados da biblioteca, histórico de reprodução e favoritos) são guardados de forma limpa no diretório padrão do utilizador, seguindo estritamente as especificações XDG:
 
-```text
-~/.config/openwave/state.json
-
-```
+* **Ficheiro de Estado:** `~/.config/openwave/state.json`
+* **Ficheiros Binários e de Dados:** `~/.local/share/openwave/`
+* **Atalho de Desktop:** `~/.local/share/applications/openwave.desktop`
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
-* **Linguagem:** [Python](https://www.python.org/)
+* **Linguagem:** [Python](https://www.python.org/) (v3.10 ou superior)
 * **Interface Gráfica:** [PyGObject (GTK 3)](https://pygobject.readthedocs.io/)
-* **Motor de Áudio:** [GStreamer](https://gstreamer.freedesktop.org/)
-* **Formatação de Dados:** JSON para armazenamento leve de estado.
+* **Motor de Áudio:** [GStreamer 1.0](https://gstreamer.freedesktop.org/) (através do pipeline `playbin`)
+* **Leitura de Tags:** [Mutagen](https://mutagen.readthedocs.io/)
+* **Formatação de Dados:** Armazenamento leve baseado em estruturas JSON.
 
 ---
 
@@ -84,12 +77,12 @@ Os dados de configuração da aplicação (playlists, caminho da biblioteca e fa
 
 O OpenWave orgulha-se de fazer parte e apoiar a comunidade de código aberto (*Open Source*):
 
-* **Autor e Desenvolvedor Principal:** [Mateus Calixto](mailto:contato@mateuscalixto.com.br)
-* **Design de Ícones:** [GNOME Project](https://www.gnome.org/) (fornecimento dos ícones simbólicos padrão).
-* **Inspiração Visual:** [Linux Mint Desktop Team](https://linuxmint.com/) pela criação do deslumbrante tema e paleta de cores do ecossistema *Mint-Y*, que serviu de fundação para o design desta aplicação.
+* **Autor e Desenvolvedor Principal:** [Mateus Calixto]()
+* **Design de Ícones:** [GNOME Project](https://www.gnome.org/) (fornecimento dos ícones simbólicos padrão utilizados na interface).
+* **Inspiração Visual:** [Linux Mint Desktop Team](https://linuxmint.com/) pela criação do deslumbrante tema e paleta de cores do ecossistema *Mint-Y*, servindo de base estrutural para os estilos CSS personalizados injetados na aplicação.
 
 ---
 
 ## 📄 Licença
 
-Este projeto está licenciado sob a Licença **MIT** - consulte o ficheiro [LICENSE](https://www.google.com/search?q=LICENSE) para obter mais detalhes.
+Este projeto está licenciado sob a **Licença MIT** - consulte o ficheiro de licença para mais detalhes.
