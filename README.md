@@ -54,7 +54,7 @@ git clone [https://github.com/openwave-player/openwave.git](https://github.com/o
 cd openwave
 
 # Executar a aplicação
-python3 app.py
+python3 installer.py
 
 ```
 
