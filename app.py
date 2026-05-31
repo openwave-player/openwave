@@ -50,13 +50,6 @@ def normalize_text(value: object, fallback: str) -> str:
     return text or fallback
 
 
-def pretty_album_name(album: str, artist: str) -> str:
-    album = album.strip() or "Álbum desconhecido"
-    artist = artist.strip() or "Artista desconhecido"
-    if album.lower() == artist.lower():
-        return album
-    return album
-
 
 def read_audio_metadata(path: str) -> dict:
     file_path = Path(path)
@@ -111,7 +104,7 @@ def read_audio_metadata(path: str) -> dict:
         "path": str(file_path),
         "title": title,
         "artist": artist,
-        "album": pretty_album_name(album, artist),
+        "album": album.strip() or "Álbum desconhecido",
         "duration": duration,
         "cover_data": cover_data,
     }
@@ -221,7 +214,9 @@ class OpenWave(Gtk.Window):
 
         self.connect("destroy", self._on_destroy)
         self.show_all()
-        self.empty_label.set_visible(True)
+        # Reapply empty-state visibility after show_all (which would otherwise reveal it)
+        has_tracks = bool(self.library_tracks or self.current_view in {"queue", "playlist", "favorites"})
+        self.empty_label.set_visible(not has_tracks)
 
     def _on_destroy(self, *args):
         try:
@@ -508,7 +503,6 @@ class OpenWave(Gtk.Window):
 
         return section, listbox, add_button
 
-
     def _build_sidebar(self) -> Gtk.Widget:
         wrapper = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         wrapper.set_size_request(286, -1)
@@ -678,18 +672,15 @@ class OpenWave(Gtk.Window):
     def on_artist_tracks_clicked(self, widget) -> None:
         if self.current_artist_name:
             self.current_album_key = None
-            if hasattr(self, "album_selector"):
-                self._syncing_sidebar_selection = True
-                try:
-                    self.album_selector.set_active(0)
-                finally:
-                    self._syncing_sidebar_selection = False
+            self._syncing_sidebar_selection = True
+            try:
+                self.album_selector.set_active(0)
+            finally:
+                self._syncing_sidebar_selection = False
             self._set_view("artist", artist_name=self.current_artist_name)
 
     def on_album_selector_changed(self, widget) -> None:
         if self._syncing_sidebar_selection or not self.current_artist_name:
-            return
-        if not hasattr(self, "album_selector"):
             return
         active = self.album_selector.get_active()
         if active <= 0:
@@ -701,6 +692,7 @@ class OpenWave(Gtk.Window):
 
     def on_album_card_clicked(self, button, album_name: str, album_artist: str) -> None:
         self._set_view("album", artist_name=album_artist, album_key=(album_name, album_artist))
+
     def _load_state(self) -> None:
         if not self.config_file.exists():
             return
@@ -879,27 +871,17 @@ class OpenWave(Gtk.Window):
 
         self._clear_flowbox(self.album_flowbox)
 
-        if hasattr(self, "album_selector"):
-            self.album_selector.handler_block_by_func(self.on_album_selector_changed)
-            try:
-                self.album_selector.remove_all()
-            except Exception:
-                pass
-            self.album_selector.append_text("Todos os álbuns")
-        else:
-            self.album_selector = None
+        self.album_selector.handler_block_by_func(self.on_album_selector_changed)
+        self.album_selector.remove_all()
+        self.album_selector.append_text("Todos os álbuns")
 
         if not artist_name or artist_name not in self.artist_index:
             self.album_browser_label.set_text("Artista")
             self.album_browser_subtitle.set_text("Selecione um artista para ver os álbuns.")
             self.album_count_label.set_text("")
             self.album_empty_label.set_text("Selecione um artista para ver os álbuns.")
-            if hasattr(self, "album_selector"):
-                try:
-                    self.album_selector.set_active(0)
-                except Exception:
-                    pass
-                self.album_selector.handler_unblock_by_func(self.on_album_selector_changed)
+            self.album_selector.set_active(0)
+            self.album_selector.handler_unblock_by_func(self.on_album_selector_changed)
             self._set_album_browser_visible(False)
             return
 
@@ -912,34 +894,32 @@ class OpenWave(Gtk.Window):
         self.album_count_label.set_text(f"{len(album_keys)} álbum{'s' if len(album_keys) != 1 else ''}")
         self.album_empty_label.set_text("Selecione um álbum para ver as músicas.")
 
-        if hasattr(self, "album_selector"):
-            current_album_name = None
-            if self.current_album_key and self.current_album_key[1] == artist_name:
-                current_album_name = self.current_album_key[0]
-            for album_name, album_artist in album_keys:
-                self.album_selector.append_text(album_name or "Álbum sem nome")
-                album_tracks = self.album_index.get((album_name, album_artist), [])
-                active = current_album_name == album_name
-                child = self._build_album_card(album_name, album_artist, album_tracks, active=active)
-                self.album_flowbox.add(child)
-            try:
-                if current_album_name is None:
-                    self.album_selector.set_active(0)
-                else:
-                    for idx, (album_name, _album_artist) in enumerate(album_keys, start=1):
-                        if album_name == current_album_name:
-                            self.album_selector.set_active(idx)
-                            break
-                    else:
-                        self.album_selector.set_active(0)
-            finally:
-                self.album_selector.handler_unblock_by_func(self.on_album_selector_changed)
+        current_album_name = None
+        if self.current_album_key and self.current_album_key[1] == artist_name:
+            current_album_name = self.current_album_key[0]
 
+        for album_name, album_artist in album_keys:
+            self.album_selector.append_text(album_name or "Álbum sem nome")
+            album_tracks = self.album_index.get((album_name, album_artist), [])
+            active = current_album_name == album_name
+            child = self._build_album_card(album_name, album_artist, album_tracks, active=active)
+            self.album_flowbox.add(child)
+
+        if current_album_name is None:
+            self.album_selector.set_active(0)
+        else:
+            for idx, (album_name, _album_artist) in enumerate(album_keys, start=1):
+                if album_name == current_album_name:
+                    self.album_selector.set_active(idx)
+                    break
+            else:
+                self.album_selector.set_active(0)
+
+        self.album_selector.handler_unblock_by_func(self.on_album_selector_changed)
         self.album_flowbox.show_all()
         self._set_album_browser_visible(True)
 
     def _artist_album_keys(self, artist_name: str) -> list[tuple[str, str]]:
-
         keys = {(track.get("album", ""), track.get("artist", "")) for track in self.artist_index.get(artist_name, [])}
         return sorted(keys, key=lambda item: (item[0].lower(), item[1].lower()))
 
@@ -996,114 +976,6 @@ class OpenWave(Gtk.Window):
         button.add(content)
         child.add(button)
         return child
-
-    def _build_artist_tree_model(self) -> Gtk.TreeStore:
-        store = Gtk.TreeStore(str, str, str, str, str, str, str)
-        if not self.artist_index:
-            return store
-
-        for artist, artist_tracks in sorted(self.artist_index.items(), key=lambda item: item[0].lower()):
-            artist_tracks_sorted = sorted(
-                artist_tracks,
-                key=lambda track: (
-                    track.get("album", "").lower(),
-                    track.get("title", "").lower(),
-                ),
-            )
-            albums: dict[tuple[str, str], list[dict]] = defaultdict(list)
-            for track in artist_tracks_sorted:
-                albums[(track["album"], track["artist"])].append(track)
-
-            artist_markup = self._sidebar_markup(
-                artist,
-                f"{len(albums)} álbum{'s' if len(albums) != 1 else ''} • {len(artist_tracks_sorted)} faixa{'s' if len(artist_tracks_sorted) != 1 else ''}",
-                bold=True,
-            )
-            artist_iter = store.append(None, [artist_markup, "artist", "avatar-default-symbolic", artist, "", "", ""])
-
-            for (album, album_artist), album_tracks in sorted(
-                albums.items(), key=lambda item: (item[0][0].lower(), item[0][1].lower())
-            ):
-                album_sorted = sorted(album_tracks, key=lambda track: track.get("title", "").lower())
-                album_markup = self._sidebar_markup(
-                    album,
-                    f"{album_artist} • {len(album_sorted)} faixa{'s' if len(album_sorted) != 1 else ''}",
-                    bold=True,
-                )
-                album_iter = store.append(artist_iter, [album_markup, "album", "media-optical-symbolic", artist, album, album_artist, ""])
-
-                for track in album_sorted:
-                    duration = track.get("duration") or 0.0
-                    duration_text = self.format_time_from_seconds(duration) if duration > 0 else ""
-                    track_subtitle = f"{track['artist']}"
-                    if track.get("album"):
-                        track_subtitle = f"{track_subtitle} • {track['album']}"
-                    if duration_text:
-                        track_subtitle = f"{track_subtitle} • {duration_text}"
-                    track_markup = self._sidebar_markup(track["title"], track_subtitle, bold=False)
-                    store.append(album_iter, [track_markup, "track", "audio-x-generic-symbolic", track["artist"], track["album"], track["artist"], track["path"]])
-
-        return store
-
-    def _sidebar_markup(self, title: str, subtitle: str = "", bold: bool = True) -> str:
-        from xml.sax.saxutils import escape
-
-        title_text = escape(title)
-        subtitle_text = escape(subtitle)
-        if bold:
-            if subtitle_text:
-                return f"<b>{title_text}</b>\n<small>{subtitle_text}</small>"
-            return f"<b>{title_text}</b>"
-        if subtitle_text:
-            return f"{title_text}\n<small>{subtitle_text}</small>"
-        return title_text
-
-    def _sidebar_tree_section(self, title: str):
-        section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        section.set_border_width(12)
-
-        header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        header.set_hexpand(True)
-
-        label = Gtk.Label(label=title)
-        label.set_halign(Gtk.Align.START)
-        label.set_xalign(0.0)
-        label.get_style_context().add_class("title-2")
-        header.pack_start(label, True, True, 0)
-
-        section.pack_start(header, False, False, 0)
-
-        scroll = Gtk.ScrolledWindow()
-        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scroll.set_shadow_type(Gtk.ShadowType.NONE)
-        scroll.set_hexpand(True)
-        scroll.set_vexpand(False)
-        scroll.set_min_content_height(240)
-
-        tree = Gtk.TreeView()
-        tree.set_headers_visible(False)
-        tree.set_enable_tree_lines(True)
-        tree.get_style_context().add_class("track-list")
-        tree.get_selection().set_mode(Gtk.SelectionMode.SINGLE)
-        tree.get_selection().connect("changed", self.on_artists_tree_selection_changed)
-
-        icon_renderer = Gtk.CellRendererPixbuf()
-        text_renderer = Gtk.CellRendererText()
-        text_renderer.set_property("wrap-mode", Pango.WrapMode.WORD_CHAR)
-        text_renderer.set_property("wrap-width", 220)
-        text_renderer.set_property("ellipsize", Pango.EllipsizeMode.END)
-
-        column = Gtk.TreeViewColumn()
-        column.pack_start(icon_renderer, False)
-        column.pack_start(text_renderer, True)
-        column.add_attribute(icon_renderer, "icon-name", 2)
-        column.add_attribute(text_renderer, "markup", 0)
-        tree.append_column(column)
-
-        scroll.add(tree)
-        section.pack_start(scroll, False, False, 0)
-
-        return section, tree
 
     def _add_sidebar_row(
         self,
@@ -1220,9 +1092,6 @@ class OpenWave(Gtk.Window):
         self.btn_play.set_sensitive(has_tracks)
         self.empty_label.set_visible(not has_tracks)
         self._set_album_browser_visible(self.current_view in {"artist", "album"} and bool(self.current_artist_name))
-
-        if self.current_view in {"artist", "album"} and self.current_artist_name:
-            self._refresh_album_browser(self.current_artist_name)
 
         if not has_tracks and not self.current_track_path:
             self.btn_favorite_dock.set_sensitive(False)
@@ -1382,6 +1251,11 @@ class OpenWave(Gtk.Window):
             return False
         return False
 
+    def _cancel_progress_timer(self) -> None:
+        if self.timer_id is not None:
+            GLib.source_remove(self.timer_id)
+            self.timer_id = None
+
     def play_track(self, path: str, push_history: bool = True) -> None:
         if not path or not Path(path).exists():
             return
@@ -1420,8 +1294,11 @@ class OpenWave(Gtk.Window):
             self.timer_id = GLib.timeout_add(1000, self.update_progress)
 
     def stop_playback(self) -> None:
-        self.player.set_state(Gst.State.PAUSED)
+        self.player.set_state(Gst.State.NULL)
         self.is_playing = False
+        self._cancel_progress_timer()
+        self.progress_bar.set_fraction(0.0)
+        self.time_current.set_text("00:00")
         self._update_play_pause_icon()
 
     def on_choose_folder_clicked(self, widget) -> None:
@@ -1444,7 +1321,6 @@ class OpenWave(Gtk.Window):
     def on_refresh_clicked(self, widget) -> None:
         if self.library_folder:
             self._scan_library(self.library_folder)
-
 
     def on_sidebar_selected(self, listbox, row) -> None:
         if self._syncing_sidebar_selection:
@@ -1763,10 +1639,6 @@ class OpenWave(Gtk.Window):
                 self._refresh_sidebar()
         dialog.destroy()
 
-    def _set_cover_from_tag_bytes(self, data: bytes | None) -> None:
-        if data and not self._load_cover_from_bytes(data, 60):
-            self._set_default_cover()
-
     def on_tag_found(self, bus, message) -> None:
         try:
             taglist = message.parse_tag()
@@ -1826,12 +1698,12 @@ class OpenWave(Gtk.Window):
         except Exception:
             pass
         self.is_playing = False
+        self.current_track_path = None
+        self._cancel_progress_timer()
+        self.progress_bar.set_fraction(0.0)
+        self.time_current.set_text("00:00")
         self._update_play_pause_icon()
         self._set_default_cover()
-
-    def format_time(self, ns: int) -> str:
-        seconds = max(0, ns) // Gst.SECOND
-        return self.format_time_from_seconds(seconds)
 
     def format_time_from_seconds(self, seconds: float) -> str:
         total = max(0, int(seconds))
@@ -1847,8 +1719,8 @@ class OpenWave(Gtk.Window):
             suc_dur, dur = self.player.query_duration(Gst.Format.TIME)
             if suc_pos and suc_dur and dur > 0:
                 self.progress_bar.set_fraction(min(max(pos / dur, 0.0), 1.0))
-                self.time_current.set_text(self.format_time(pos))
-                self.time_total.set_text(self.format_time(dur))
+                self.time_current.set_text(self.format_time_from_seconds(pos / Gst.SECOND))
+                self.time_total.set_text(self.format_time_from_seconds(dur / Gst.SECOND))
                 self.current_duration = dur / Gst.SECOND
         except Exception:
             pass
@@ -1860,7 +1732,7 @@ class OpenWave(Gtk.Window):
         about.set_modal(True)
 
         about.set_program_name("OpenWave")
-        about.set_version("0.1")
+        about.set_version("0.1.1")
         about.set_comments(
             "Player de música planejado para a estética do tema Mint-Y."
         )
@@ -1881,11 +1753,7 @@ class OpenWave(Gtk.Window):
 
 
 if __name__ == "__main__":
-    Gst.init(None) 
-    
     Gtk.Window.set_default_icon_name("multimedia-audio-player")
-    
-    window = OpenWave() 
+    window = OpenWave()
     window.connect("destroy", Gtk.main_quit)
-    window.show_all()
     Gtk.main()
