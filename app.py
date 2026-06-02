@@ -23,8 +23,6 @@ APP_VERSION = "0.1.2"
 GITHUB_RELEASES_API = "https://api.github.com/repos/openwave-player/openwave/releases/latest"
 DOWNLOAD_URL_TEMPLATE = "https://raw.githubusercontent.com/openwave-player/openwave/{tag}/app.py"
 
-# Caminho absoluto resolvido UMA VEZ quando o módulo é carregado.
-# Dentro de closures e threads, __file__ pode ser relativo ou ambíguo.
 SCRIPT_PATH = Path(os.path.abspath(__file__))
 
 
@@ -1797,6 +1795,9 @@ class OpenWave(Gtk.Window):
         return False
 
     def _download_and_restart(self, tag: str, download_url: str) -> None:
+        print(f"[update] _download_and_restart chamado: tag={tag}")
+        print(f"[update] SCRIPT_PATH={SCRIPT_PATH}")
+        print(f"[update] download_url={download_url}")
 
         progress_dialog = Gtk.Dialog(
             title="Atualizando OpenWave…",
@@ -1820,6 +1821,7 @@ class OpenWave(Gtk.Window):
         progress_dialog.show_all()
 
         def _do_download():
+            print("[update] _do_download iniciou")
             try:
                 req = urllib.request.Request(
                     download_url,
@@ -1839,8 +1841,8 @@ class OpenWave(Gtk.Window):
                 GLib.idle_add(_finish_error, str(exc))
 
         def _finish_ok():
+            print("[update] _finish_ok chamado")
             progress_dialog.destroy()
-            # Limpa cache .pyc para garantir que o novo código seja carregado
             import shutil
             pycache = SCRIPT_PATH.parent / "__pycache__"
             if pycache.exists():
@@ -1848,7 +1850,10 @@ class OpenWave(Gtk.Window):
             pyc = SCRIPT_PATH.with_suffix(".pyc")
             if pyc.exists():
                 pyc.unlink(missing_ok=True)
+            print(f"[update] execv: {sys.executable} {SCRIPT_PATH}")
+            print(f"[update] arquivo existe: {SCRIPT_PATH.exists()}, tamanho: {SCRIPT_PATH.stat().st_size} bytes")
             os.execv(sys.executable, [sys.executable, str(SCRIPT_PATH)])
+            print("[update] execv retornou (não deveria acontecer)")
             return False
 
         def _finish_error(msg: str):
@@ -1865,7 +1870,7 @@ class OpenWave(Gtk.Window):
             err.destroy()
             return False
 
-        thread = threading.Thread(target=_do_download, daemon=True)
+        thread = threading.Thread(target=_do_download, daemon=False)
         thread.start()
 
     def on_about_clicked(self, widget) -> None:
