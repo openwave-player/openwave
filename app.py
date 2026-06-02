@@ -23,8 +23,13 @@ APP_VERSION = "0.1.2"
 GITHUB_RELEASES_API = "https://api.github.com/repos/openwave-player/openwave/releases/latest"
 DOWNLOAD_URL_TEMPLATE = "https://raw.githubusercontent.com/openwave-player/openwave/{tag}/app.py"
 
+# Resolvido UMA VEZ no momento em que o módulo é carregado,
+# antes de qualquer chdir ou manipulação de PATH.
+SCRIPT_PATH = Path(os.path.abspath(__file__))
+
 
 def _parse_version(v: str) -> tuple[int, ...]:
+    """Converte string de versão em tupla comparável, ex: '0.1.2' → (0, 1, 2)."""
     try:
         return tuple(int(x) for x in v.lstrip("v").split("."))
     except Exception:
@@ -32,6 +37,11 @@ def _parse_version(v: str) -> tuple[int, ...]:
 
 
 def check_for_updates(on_update_available):
+    """
+    Executa em uma thread separada.
+    Consulta a API do GitHub e chama on_update_available(tag, download_url)
+    via GLib.idle_add se houver uma versão mais nova.
+    """
     def _run():
         try:
             req = urllib.request.Request(
@@ -49,7 +59,7 @@ def check_for_updates(on_update_available):
                 download_url = DOWNLOAD_URL_TEMPLATE.format(tag=tag)
                 GLib.idle_add(on_update_available, tag, download_url)
         except Exception:
-            pass
+            pass  # falha silenciosa – não travar nem alertar o usuário
 
     thread = threading.Thread(target=_run, daemon=True)
     thread.start()
@@ -256,6 +266,7 @@ class OpenWave(Gtk.Window):
         has_tracks = bool(self.library_tracks or self.current_view in {"queue", "playlist", "favorites"})
         self.empty_label.set_visible(not has_tracks)
 
+        # Inicia verificação de atualização em segundo plano
         check_for_updates(self._on_update_available)
 
     def _on_destroy(self, *args):
@@ -1790,10 +1801,15 @@ class OpenWave(Gtk.Window):
         if response == Gtk.ResponseType.YES:
             self._download_and_restart(tag, download_url)
 
-        return False
+        return False  # não repetir via idle_add
 
     def _download_and_restart(self, tag: str, download_url: str) -> None:
-
+        """
+        Baixa o novo app.py, sobrescreve o arquivo atual e reinicia o processo.
+        O download ocorre em uma thread para não congelar a UI; um diálogo de
+        progresso é exibido durante o processo.
+        """
+        # Diálogo de progresso
         progress_dialog = Gtk.Dialog(
             title="Atualizando OpenWave…",
             transient_for=self,
@@ -1824,16 +1840,31 @@ class OpenWave(Gtk.Window):
                 with urllib.request.urlopen(req, timeout=30) as resp:
                     new_source = resp.read()
 
-                script_path = Path(os.path.abspath(__file__))
-                script_path.write_bytes(new_source)
+                print(f"[update] Download completo: {len(new_source)} bytes")
 
+                tmp_path = SCRIPT_PATH.with_suffix(".tmp")
+                tmp_path.write_bytes(new_source)
+                tmp_path.replace(SCRIPT_PATH)
+
+                print(f"[update] Arquivo substituído: {SCRIPT_PATH}")
                 GLib.idle_add(_finish_ok)
             except Exception as exc:
+                import traceback
+                traceback.print_exc()
                 GLib.idle_add(_finish_error, str(exc))
 
         def _finish_ok():
             progress_dialog.destroy()
-            os.execv(sys.executable, [sys.executable, str(os.path.abspath(__file__))])
+            print(f"[update] Reiniciando: {sys.executable} {SCRIPT_PATH}")
+            try:
+                os.execv(sys.executable, [sys.executable, str(SCRIPT_PATH)])
+            except Exception as exc:
+                import traceback
+                traceback.print_exc()
+                # execv falhou — tenta subprocess como fallback
+                import subprocess
+                subprocess.Popen([sys.executable, str(SCRIPT_PATH)])
+                Gtk.main_quit()
             return False
 
         def _finish_error(msg: str):
