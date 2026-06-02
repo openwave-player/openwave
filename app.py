@@ -3,6 +3,9 @@ from __future__ import annotations
 import json
 import os
 import random
+import sys
+import threading
+import urllib.request
 from collections import defaultdict
 from pathlib import Path
 
@@ -14,6 +17,42 @@ gi.require_version("Gst", "1.0")
 
 from gi.repository import Gdk, GdkPixbuf, GLib, Gst, Gtk, Pango
 from mutagen import File as MutagenFile
+
+
+APP_VERSION = "0.1.2"
+GITHUB_RELEASES_API = "https://api.github.com/repos/openwave-player/openwave/releases/latest"
+DOWNLOAD_URL_TEMPLATE = "https://raw.githubusercontent.com/openwave-player/openwave/{tag}/app.py"
+
+
+def _parse_version(v: str) -> tuple[int, ...]:
+    try:
+        return tuple(int(x) for x in v.lstrip("v").split("."))
+    except Exception:
+        return (0,)
+
+
+def check_for_updates(on_update_available):
+    def _run():
+        try:
+            req = urllib.request.Request(
+                GITHUB_RELEASES_API,
+                headers={"User-Agent": f"OpenWave/{APP_VERSION}"},
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read().decode())
+
+            tag = data.get("tag_name", "").strip()
+            if not tag:
+                return
+
+            if _parse_version(tag) > _parse_version(APP_VERSION):
+                download_url = DOWNLOAD_URL_TEMPLATE.format(tag=tag)
+                GLib.idle_add(on_update_available, tag, download_url)
+        except Exception:
+            pass
+
+    thread = threading.Thread(target=_run, daemon=True)
+    thread.start()
 
 
 AUDIO_EXTENSIONS = {
@@ -214,9 +253,10 @@ class OpenWave(Gtk.Window):
 
         self.connect("destroy", self._on_destroy)
         self.show_all()
-        # Reapply empty-state visibility after show_all (which would otherwise reveal it)
         has_tracks = bool(self.library_tracks or self.current_view in {"queue", "playlist", "favorites"})
         self.empty_label.set_visible(not has_tracks)
+
+        check_for_updates(self._on_update_available)
 
     def _on_destroy(self, *args):
         try:
@@ -1725,6 +1765,93 @@ class OpenWave(Gtk.Window):
         except Exception:
             pass
         return True
+
+    def _on_update_available(self, tag: str, download_url: str) -> bool:
+        """
+        Chamado na thread principal do GTK via GLib.idle_add.
+        Exibe um diálogo perguntando se o usuário deseja atualizar.
+        Retorna False para que o GLib não repita a chamada.
+        """
+        dialog = Gtk.MessageDialog(
+            transient_for=self,
+            modal=True,
+            message_type=Gtk.MessageType.QUESTION,
+            buttons=Gtk.ButtonsType.YES_NO,
+            text=f"Nova versão disponível: {tag}",
+        )
+        dialog.format_secondary_text(
+            f"Você está usando a versão {APP_VERSION}.\n"
+            "Deseja baixar e instalar a atualização agora?\n"
+            "O aplicativo será reiniciado automaticamente."
+        )
+        response = dialog.run()
+        dialog.destroy()
+
+        if response == Gtk.ResponseType.YES:
+            self._download_and_restart(tag, download_url)
+
+        return False
+
+    def _download_and_restart(self, tag: str, download_url: str) -> None:
+
+        progress_dialog = Gtk.Dialog(
+            title="Atualizando OpenWave…",
+            transient_for=self,
+            modal=True,
+        )
+        progress_dialog.set_deletable(False)
+        progress_dialog.set_default_size(360, -1)
+        content = progress_dialog.get_content_area()
+        content.set_border_width(18)
+        content.set_spacing(12)
+
+        lbl = Gtk.Label(label=f"Baixando versão {tag}…")
+        lbl.set_halign(Gtk.Align.START)
+        content.pack_start(lbl, False, False, 0)
+
+        spinner = Gtk.Spinner()
+        spinner.start()
+        content.pack_start(spinner, False, False, 0)
+
+        progress_dialog.show_all()
+
+        def _do_download():
+            try:
+                req = urllib.request.Request(
+                    download_url,
+                    headers={"User-Agent": f"OpenWave/{APP_VERSION}"},
+                )
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    new_source = resp.read()
+
+                script_path = Path(os.path.abspath(__file__))
+                script_path.write_bytes(new_source)
+
+                GLib.idle_add(_finish_ok)
+            except Exception as exc:
+                GLib.idle_add(_finish_error, str(exc))
+
+        def _finish_ok():
+            progress_dialog.destroy()
+            os.execv(sys.executable, [sys.executable, str(os.path.abspath(__file__))])
+            return False
+
+        def _finish_error(msg: str):
+            progress_dialog.destroy()
+            err = Gtk.MessageDialog(
+                transient_for=self,
+                modal=True,
+                message_type=Gtk.MessageType.ERROR,
+                buttons=Gtk.ButtonsType.OK,
+                text="Falha ao atualizar",
+            )
+            err.format_secondary_text(msg)
+            err.run()
+            err.destroy()
+            return False
+
+        thread = threading.Thread(target=_do_download, daemon=True)
+        thread.start()
 
     def on_about_clicked(self, widget) -> None:
         about = Gtk.AboutDialog()

@@ -120,7 +120,7 @@ class OpenWaveInstaller(Gtk.Assistant):
         title.get_style_context().add_class("main-title")
         title.set_halign(Gtk.Align.START)
         
-        version = Gtk.Label(label="Assistente de Configuração • Versão 0.1.1")
+        version = Gtk.Label(label="Assistente de Configuração • Versão 0.1.2")
         version.get_style_context().add_class("text-muted")
         version.set_halign(Gtk.Align.START)
         
