@@ -1859,7 +1859,7 @@ class OpenWave(Gtk.Window):
         about.set_modal(True)
 
         about.set_program_name("OpenWave")
-        about.set_version("0.1.1")
+        about.set_version("0.1.2")
         about.set_comments(
             "Player de música planejado para a estética do tema Mint-Y."
         )
