@@ -1,88 +1,123 @@
-# 🌊 OpenWave
+# OpenWave
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python&logoColor=white)
-![GTK](https://img.shields.io/badge/GTK-3.0-orange?style=for-the-badge&logo=gnome&logoColor=white)
-![GStreamer](https://img.shields.io/badge/GStreamer-1.0-green?style=for-the-badge&logo=gstreamer&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
+![Versão](https://img.shields.io/badge/versão-0.1.3-blue.svg)
+![Licença](https://img.shields.io/badge/licença-MIT-green.svg)
+![Plataforma](https://img.shields.io/badge/plataforma-Linux-lightgrey.svg)
 
-O **OpenWave** é um leitor de áudio minimalista, rápido e elegante para Linux. Desenvolvido em Python com GTK 3 e GStreamer, o projeto foi carinhosamente planeado e esculpido para se integrar perfeitamente com a estética e o ecossistema visual do tema **Mint-Y (Linux Mint)**, mantendo ao mesmo tempo a flexibilidade de respeitar o pacote de ícones padrão de qualquer distribuição.
+**OpenWave** é um player de música para Linux desenvolvido em Python com GTK3. Ele foi desenhado com foco na simplicidade, leveza e planejado especialmente para harmonizar com a estética do tema **Mint-Y** (Linux Mint).
 
----
-
-## ✨ Funcionalidades
-
-- 📁 **Gestão de Biblioteca:** Selecione uma pasta local e o OpenWave organiza e indexa automaticamente as suas faixas por ordem alfabética.
-- 🔍 **Pesquisa Instantânea:** Filtre músicas instantaneamente por título, artista ou álbum enquanto digita, tanto na barra principal como no painel lateral de artistas.
-- 🗂️ **Navegação Inteligente por Artista/Álbum:** Interface segmentada que gera índices dinâmicos para isolar álbuns e artistas sem poluir a sua lista de reprodução principal.
-- ⭐ **Favoritos e Playlists:** Marque as suas faixas preferidas num clique e crie ou faça a gestão de playlists personalizadas diretamente através do menu contextual de botões.
-- 📂 **Amplo Suporte de Formatos:** Graças à integração nativa com o GStreamer, o leitor reproduz ficheiros `.mp3`, `.wav`, `.ogg`, `.flac`, `.m4a`, `.aac`, `.opus`, `.wma`, `.aiff`, `.aif`, `.alac`, `.mp2` e `.mka`.
-- 🖼️ **Leitura Automatizada de Metadados:** Extração e renderização inteligente de capas de álbuns incorporadas (tags APIC/id3/covr) e tags de texto via Mutagen.
+Gerencie sua biblioteca de áudio local com uma interface limpa, leitura inteligente de metadados e suporte nativo a playlists e favoritos.
 
 ---
 
-## 🚀 Instalação e Execução
+## ✨ Recursos
 
-O projeto inclui um **Assistente Gráfico de Configuração** (`installer.py`) que facilita tanto a instalação inicial (com criação automática de atalhos e ficheiros `.desktop`) como a desinstalação completa do sistema do utilizador.
+* **Interface GTK3 Limpa:** Integração perfeita com ambientes desktop baseados em GTK (projetado com a estética Mint-Y em mente).
+* **Leitura de Metadados:** Suporte avançado à leitura de tags de áudio e extração de capas embutidas usando o `mutagen` e `GStreamer`.
+* **Gestão de Biblioteca:** Escaneamento automático de pastas, organização dinâmica por **Artistas** e **Álbuns**.
+* **Playlists & Favoritos:** Crie playlists personalizadas e favorite suas faixas preferidas rapidamente.
+* **Fila de Reprodução Inteligente:** Modo aleatório (shuffle), reprodução sequencial e histórico de faixas.
+* **Atualização Automática:** Mecanismo integrado (`updater.py`) que verifica novas versões no GitHub e aplica atualizações sem complicações.
+* **Instalador Gráfico Integrado:** Acompanha um assistente (`installer.py`) para instalação no perfil do usuário, criação de atalhos (`.desktop`) ou remoção completa.
 
-### Pré-requisitos (Ubuntu / Debian / Linux Mint)
+## 🎧 Formatos Suportados
+O OpenWave suporta uma ampla variedade de formatos de áudio nativamente, incluindo:
+`MP3`, `WAV`, `OGG`, `FLAC`, `M4A`, `AAC`, `OPUS`, `WMA`, `AIFF`, `ALAC`, `MP2`, `MKA`.
 
-Antes de executar, certifique-se de que tem instaladas as dependências do sistema para o PyGObject, GStreamer e a biblioteca de manipulação de metadados `mutagen`:
+---
+
+## 🛠️ Instalação
+
+### Pré-requisitos
+Certifique-se de ter o Python 3 instalado no seu sistema, juntamente com as bibliotecas GTK e GStreamer. Em distribuições baseadas em Debian/Ubuntu (como o Linux Mint), você pode instalar as dependências com:
 
 ```bash
 sudo apt update
-sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-gst-plugins-base-1.0 gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly
-pip install mutagen
+sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-gst-plugins-base-1.0 gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly python3-mutagen python3-pip
 
 ```
 
-### Clonar e Instalar
+*(Nota: O instalador do OpenWave tentará instalar o `mutagen` via pip automaticamente caso ele não seja encontrado no sistema).*
 
+### Instalando o OpenWave
+
+O projeto conta com um assistente de instalação gráfico para facilitar o processo.
+
+1. Clone o repositório:
 ```bash
-# Clonar o repositório
 git clone [https://github.com/openwave-player/openwave.git](https://github.com/openwave-player/openwave.git)
-
-# Entrar na pasta
 cd openwave
 
-# Executar o assistente gráfico de instalação
+```
+
+
+2. Execute o instalador:
+```bash
 python3 installer.py
 
 ```
 
-O assistente encarregar-se-á de copiar os ficheiros para a sua pasta local e disponibilizar o atalho no menu de aplicações do seu ambiente de desktop.
+
+3. Siga os passos na tela do assistente. Ele copiará os arquivos necessários para `~/.local/share/openwave` e criará um atalho no seu menu de aplicativos.
 
 ---
 
-## ⚙️ Configuração e Armazenamento
+## 🚀 Como Usar
 
-Os dados de configuração da aplicação (playlists criadas, caminhos indexados da biblioteca, histórico de reprodução e favoritos) são guardados de forma limpa no diretório padrão do utilizador, seguindo estritamente as especificações XDG:
+* **Pelo Menu do Sistema:** Procure por "OpenWave" no seu menu de aplicativos e inicie por lá.
+* **Via Terminal:** Se preferir rodar direto pelo terminal após instalar:
+```bash
+python3 ~/.local/share/openwave/app.py
 
-* **Ficheiro de Estado:** `~/.config/openwave/state.json`
-* **Ficheiros Binários e de Dados:** `~/.local/share/openwave/`
-* **Atalho de Desktop:** `~/.local/share/applications/openwave.desktop`
+```
 
----
 
-## 🛠️ Tecnologias Utilizadas
-
-* **Linguagem:** [Python](https://www.python.org/) (v3.10 ou superior)
-* **Interface Gráfica:** [PyGObject (GTK 3)](https://pygobject.readthedocs.io/)
-* **Motor de Áudio:** [GStreamer 1.0](https://gstreamer.freedesktop.org/) (através do pipeline `playbin`)
-* **Leitura de Tags:** [Mutagen](https://mutagen.readthedocs.io/)
-* **Formatação de Dados:** Armazenamento leve baseado em estruturas JSON.
+* **Primeiro Acesso:** Ao abrir pela primeira vez, clique no ícone de pasta na barra superior para escolher o diretório onde suas músicas estão armazenadas. O OpenWave vai ler sua biblioteca automaticamente!
 
 ---
 
-## 🤝 Créditos e Agradecimentos
+## 🏗️ Estrutura do Projeto
 
-O OpenWave orgulha-se de fazer parte e apoiar a comunidade de código aberto (*Open Source*):
+O código está organizado em uma arquitetura modular simples:
 
-* **Autor e Desenvolvedor Principal:** [Mateus Calixto](https://mateuscalixto.com.br)
-* **Design de Ícones:** [GNOME Project](https://www.gnome.org/) (fornecimento dos ícones simbólicos padrão utilizados na interface).
-* **Inspiração Visual:** [Linux Mint Desktop Team](https://linuxmint.com/) pela criação do deslumbrante tema e paleta de cores do ecossistema *Mint-Y*, servindo de base estrutural para os estilos CSS personalizados injetados na aplicação.
+* `installer.py`: Assistente gráfico de instalação/desinstalação.
+* `app.py`: Ponto de entrada do aplicativo (que se comunica com o script de atualização).
+* `openwave/`:
+* `window.py`: Interface principal, fluxo de telas e eventos.
+* `player.py`: Encapsulamento do pipeline GStreamer (`playbin`).
+* `ui_builder.py`: Fábrica de componentes visuais e CSS customizado.
+* `utils.py`: Leitura de arquivos e extração de metadados.
+* `updater.py`: Checagem e download assíncrono de atualizações.
+* `dialogs.py`: Telas de diálogo (Sobre, Criação de Playlists).
+
+
 
 ---
 
-## 📄 Licença
+## 🤝 Contribuindo
 
-Este projeto está licenciado sob a **Licença MIT** - consulte o ficheiro de licença para mais detalhes.
+Se você encontrou um bug ou tem uma ideia de nova funcionalidade:
+
+1. Faça um *fork* do projeto.
+2. Crie uma *branch* para sua modificação (`git checkout -b feature/minha-feature`).
+3. Faça o commit das suas alterações (`git commit -m 'Adicionando nova feature'`).
+4. Faça um *push* para a branch (`git push origin feature/minha-feature`).
+5. Abra um **Pull Request**.
+
+---
+
+## 📜 Licença
+
+Este projeto é distribuído sob a Licença **MIT**. Veja o arquivo `LICENSE` (ou o cabeçalho do código) para mais detalhes.
+
+---
+
+## 👨‍💻 Autor
+
+**Mateus Calixto**
+
+* Contato: contato@mateuscalixto.com.br
+* GitHub: [openwave-player](https://github.com/openwave-player/openwave)
+
+*Inspiração visual: Linux Mint Desktop Team.*
+*Ícones Simbólicos: GNOME Project.*
