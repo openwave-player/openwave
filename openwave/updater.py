@@ -5,6 +5,8 @@ import os
 import sys
 import threading
 import urllib.request
+import zipfile
+import shutil
 from pathlib import Path
 
 import gi
@@ -43,7 +45,7 @@ def check_for_updates(on_update_available) -> None:
 
 
 def download_and_restart(parent_window: Gtk.Window, tag: str, download_url: str) -> None:
-    """Baixa a nova versão e reinicia o aplicativo."""
+    """Baixa a nova versão compactada (ZIP), extrai substituindo o app antigo e reinicia."""
     print(f"[update] download_and_restart chamado: tag={tag}")
     print(f"[update] SCRIPT_PATH={SCRIPT_PATH}")
     print(f"[update] download_url={download_url}")
@@ -76,11 +78,37 @@ def download_and_restart(parent_window: Gtk.Window, tag: str, download_url: str)
                 headers={"User-Agent": f"OpenWave/{APP_VERSION}"},
             )
             with urllib.request.urlopen(req, timeout=30) as resp:
-                new_source = resp.read()
+                zip_data = resp.read()
 
-            tmp_path = SCRIPT_PATH.with_suffix(".tmp")
-            tmp_path.write_bytes(new_source)
-            tmp_path.replace(SCRIPT_PATH)
+            root_dir = SCRIPT_PATH.parent  # Direitório raiz: ~/.local/share/openwave
+            zip_tmp = root_dir / "update.zip"
+            
+            # 1. Salva o arquivo ZIP temporariamente na pasta raiz
+            zip_tmp.write_bytes(zip_data)
+
+            # 2. Cria uma pasta temporária isolada para extração
+            extract_to = root_dir / "tmp_update"
+            if extract_to.exists():
+                shutil.rmtree(extract_to)
+
+            with zipfile.ZipFile(zip_tmp) as z:
+                z.extractall(extract_to)
+
+            # O GitHub compacta o repositório dentro de uma subpasta chamada "openwave-{tag}"
+            extracted_folder = next(extract_to.glob("openwave-*"))
+
+            # 3. Move e mescla todos os arquivos extraídos para o diretório oficial do app
+            for item in extracted_folder.iterdir():
+                dest = root_dir / item.name
+                if item.is_dir():
+                    # dirs_exist_ok=True garante a mesclagem segura de arquivos sem deletar a pasta ativa
+                    shutil.copytree(item, dest, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(item, dest)
+
+            # 4. Limpeza dos resíduos temporários de instalação
+            zip_tmp.unlink(missing_ok=True)
+            shutil.rmtree(extract_to, ignore_errors=True)
 
             GLib.idle_add(_finish_ok)
         except Exception as exc:
@@ -91,15 +119,24 @@ def download_and_restart(parent_window: Gtk.Window, tag: str, download_url: str)
     def _finish_ok():
         print("[update] _finish_ok chamado")
         progress_dialog.destroy()
-        import shutil
-        pycache = SCRIPT_PATH.parent / "__pycache__"
-        if pycache.exists():
-            shutil.rmtree(pycache, ignore_errors=True)
+        
+        # Limpeza de caches antigos de compilação (__pycache__) para evitar conflitos de leitura
+        pycache_root = SCRIPT_PATH.parent / "__pycache__"
+        if pycache_root.exists():
+            shutil.rmtree(pycache_root, ignore_errors=True)
+            
+        pycache_module = SCRIPT_PATH.parent / "openwave" / "__pycache__"
+        if pycache_module.exists():
+            shutil.rmtree(pycache_module, ignore_errors=True)
+            
         pyc = SCRIPT_PATH.with_suffix(".pyc")
         if pyc.exists():
             pyc.unlink(missing_ok=True)
+            
         print(f"[update] execv: {sys.executable} {SCRIPT_PATH}")
         print(f"[update] arquivo existe: {SCRIPT_PATH.exists()}, tamanho: {SCRIPT_PATH.stat().st_size} bytes")
+        
+        # Substitui o processo atual pelo app.py atualizado na raiz
         os.execv(sys.executable, [sys.executable, str(SCRIPT_PATH)])
         return False
 

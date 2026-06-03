@@ -3,12 +3,16 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+# Versão do aplicativo
 APP_VERSION = "0.1.3"
-GITHUB_RELEASES_API = "https://api.github.com/repos/openwave-player/openwave/releases/latest"
-DOWNLOAD_URL_TEMPLATE = "https://raw.githubusercontent.com/openwave-player/openwave/{tag}/app.py"
 
-# Caminho absoluto resolvido UMA VEZ quando o módulo é carregado.
-SCRIPT_PATH = Path(os.path.abspath(__file__)).parent / "app.py"
+# APIs e Endpoints do GitHub para Atualização
+GITHUB_RELEASES_API = "https://api.github.com/repos/openwave-player/openwave/releases/latest"
+DOWNLOAD_URL_TEMPLATE = "https://github.com/openwave-player/openwave/archive/refs/tags/{tag}.zip"
+
+
+SCRIPT_PATH = Path(os.path.abspath(__file__)).parent.parent / "app.py"
+
 
 AUDIO_EXTENSIONS = {
     ".mp3",
