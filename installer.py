@@ -120,7 +120,7 @@ class OpenWaveInstaller(Gtk.Assistant):
         title.get_style_context().add_class("main-title")
         title.set_halign(Gtk.Align.START)
         
-        version = Gtk.Label(label="Assistente de Configuração • Versão 0.1.2")
+        version = Gtk.Label(label="Assistente de Configuração • Versão 0.1.3")
         version.get_style_context().add_class("text-muted")
         version.set_halign(Gtk.Align.START)
         
@@ -315,12 +315,25 @@ class OpenWaveInstaller(Gtk.Assistant):
 
     def step_copy_files(self):
         current_dir = Path(__file__).parent
-        src_file = current_dir / "app.py"
-        if not src_file.exists():
-            raise FileNotFoundError("O arquivo 'app.py' principal precisa estar na mesma pasta deste instalador.")
-        dest_file = self.install_dir / "app.py"
-        dest_file.write_text(src_file.read_text(encoding="utf-8"), encoding="utf-8")
-        dest_file.chmod(0o755)
+
+        src_app = current_dir / "app.py"
+        if not src_app.exists():
+            raise FileNotFoundError("O arquivo 'app.py' precisa estar na mesma pasta do instalador.")
+
+        src_pkg = current_dir / "openwave"
+        if not src_pkg.exists() or not src_pkg.is_dir():
+            raise FileNotFoundError("A pasta 'openwave/' precisa estar na mesma pasta do instalador.")
+
+        # Copia app.py
+        dest_app = self.install_dir / "app.py"
+        dest_app.write_text(src_app.read_text(encoding="utf-8"), encoding="utf-8")
+        dest_app.chmod(0o755)
+
+        # Copia o pacote openwave/ (remove versao antiga antes)
+        dest_pkg = self.install_dir / "openwave"
+        if dest_pkg.exists():
+            shutil.rmtree(dest_pkg)
+        shutil.copytree(src_pkg, dest_pkg, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
 
     def step_install_deps(self):
         try:
