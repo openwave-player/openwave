@@ -10,7 +10,7 @@ Gerencie sua biblioteca de áudio local com uma interface limpa, leitura intelig
 
 ---
 
-## ✨ Recursos
+## Recursos
 
 * **Interface GTK3 Limpa:** Integração perfeita com ambientes desktop baseados em GTK (projetado com a estética Mint-Y em mente).
 * **Leitura de Metadados:** Suporte avançado à leitura de tags de áudio e extração de capas embutidas usando o `mutagen` e `GStreamer`.
@@ -20,13 +20,13 @@ Gerencie sua biblioteca de áudio local com uma interface limpa, leitura intelig
 * **Atualização Automática:** Mecanismo integrado (`updater.py`) que verifica novas versões no GitHub e aplica atualizações sem complicações.
 * **Instalador Gráfico Integrado:** Acompanha um assistente (`installer.py`) para instalação no perfil do usuário, criação de atalhos (`.desktop`) ou remoção completa.
 
-## 🎧 Formatos Suportados
+## Formatos Suportados
 O OpenWave suporta uma ampla variedade de formatos de áudio nativamente, incluindo:
 `MP3`, `WAV`, `OGG`, `FLAC`, `M4A`, `AAC`, `OPUS`, `WMA`, `AIFF`, `ALAC`, `MP2`, `MKA`.
 
 ---
 
-## 🛠️ Instalação
+## Instalação
 
 ### Pré-requisitos
 Certifique-se de ter o Python 3 instalado no seu sistema, juntamente com as bibliotecas GTK e GStreamer. Em distribuições baseadas em Debian/Ubuntu (como o Linux Mint), você pode instalar as dependências com:
@@ -62,7 +62,7 @@ python3 installer.py
 
 ---
 
-## 🚀 Como Usar
+## Como Usar
 
 * **Pelo Menu do Sistema:** Procure por "OpenWave" no seu menu de aplicativos e inicie por lá.
 * **Via Terminal:** Se preferir rodar direto pelo terminal após instalar:
@@ -76,7 +76,7 @@ python3 ~/.local/share/openwave/app.py
 
 ---
 
-## 🏗️ Estrutura do Projeto
+## Estrutura do Projeto
 
 O código está organizado em uma arquitetura modular simples:
 
@@ -94,7 +94,7 @@ O código está organizado em uma arquitetura modular simples:
 
 ---
 
-## 🤝 Contribuindo
+## Contribuindo
 
 Se você encontrou um bug ou tem uma ideia de nova funcionalidade:
 
@@ -106,13 +106,13 @@ Se você encontrou um bug ou tem uma ideia de nova funcionalidade:
 
 ---
 
-## 📜 Licença
+# Licença
 
 Este projeto é distribuído sob a Licença **MIT**. Veja o arquivo `LICENSE` (ou o cabeçalho do código) para mais detalhes.
 
 ---
 
-## 👨‍💻 Autor
+## Autor
 
 **Mateus Calixto**
 
@@ -121,6 +121,8 @@ Este projeto é distribuído sob a Licença **MIT**. Veja o arquivo `LICENSE` (o
 
 *Inspiração visual: Linux Mint Desktop Team.*
 *Ícones Simbólicos: GNOME Project.*
+
+---
 
 ## Screenshots
 ![screenshots/Captura de tela de 2026-06-04 12-40-33.png](https://raw.githubusercontent.com/openwave-player/openwave/refs/heads/main/screenshots/Captura%20de%20tela%20de%202026-06-04%2012-40-33.png)
