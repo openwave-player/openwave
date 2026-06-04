@@ -121,3 +121,8 @@ Este projeto é distribuído sob a Licença **MIT**. Veja o arquivo `LICENSE` (o
 
 *Inspiração visual: Linux Mint Desktop Team.*
 *Ícones Simbólicos: GNOME Project.*
+
+## Screenshots
+![screenshots/Captura de tela de 2026-06-04 12-40-33.png](https://raw.githubusercontent.com/openwave-player/openwave/refs/heads/main/screenshots/Captura%20de%20tela%20de%202026-06-04%2012-40-33.png)
+![screenshots/Captura de tela de 2026-06-04 12-40-57.png](https://raw.githubusercontent.com/openwave-player/openwave/refs/heads/main/screenshots/Captura%20de%20tela%20de%202026-06-04%2012-40-57.png)
+![screenshots/Captura de tela de 2026-06-04 12-40-46.png](https://raw.githubusercontent.com/openwave-player/openwave/refs/heads/main/screenshots/Captura%20de%20tela%20de%202026-06-04%2012-40-46.png)
