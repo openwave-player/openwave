@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import random
+import threading
 from collections import defaultdict
 from pathlib import Path
 
@@ -67,6 +68,11 @@ class OpenWave(Gtk.Window):
         self.current_track_path: str | None = None
         self.is_shuffle = False
         self.current_cover_url = ""
+        
+        # Flags para processamento em background e debounce
+        self.is_scanning = False
+        self._search_timeout_id = None
+        self._artist_search_timeout_id = None
 
         self.current_title = "Nenhuma faixa"
         self.current_artist = "OpenWave"
@@ -490,6 +496,9 @@ class OpenWave(Gtk.Window):
     # ------------------------------------------------------------------
 
     def _scan_library(self, folder: str, quiet: bool = False) -> None:
+        if self.is_scanning:
+            return
+
         root = Path(folder)
         if not root.exists():
             self.library_tracks = []
@@ -501,19 +510,33 @@ class OpenWave(Gtk.Window):
             self._apply_track_view()
             return
 
-        tracks: list[dict] = []
-        for current_root, _, files in os.walk(root):
-            for filename in files:
-                path = Path(current_root) / filename
-                if path.suffix.lower() in AUDIO_EXTENSIONS:
-                    tracks.append(read_audio_metadata(str(path)))
+        self.is_scanning = True
+        self.header.set_subtitle("Escaneando biblioteca...")
+        self.empty_label.set_text("Escaneando músicas, por favor aguarde...")
+        self.empty_label.set_visible(True)
+        
+        self.track_scroll.set_visible(False)
 
-        tracks.sort(key=lambda item: (
-            item["artist"].lower(),
-            item["album"].lower(),
-            item["title"].lower(),
-        ))
+        def _scan_worker():
+            tracks: list[dict] = []
+            for current_root, _, files in os.walk(root):
+                for filename in files:
+                    path = Path(current_root) / filename
+                    if path.suffix.lower() in AUDIO_EXTENSIONS:
+                        tracks.append(read_audio_metadata(str(path)))
 
+            tracks.sort(key=lambda item: (
+                item["artist"].lower(),
+                item["album"].lower(),
+                item["title"].lower(),
+            ))
+            
+            GLib.idle_add(self._on_scan_finished, tracks, folder)
+
+        thread = threading.Thread(target=_scan_worker, daemon=True)
+        thread.start()
+
+    def _on_scan_finished(self, tracks: list[dict], folder: str) -> bool:
         self.library_tracks = tracks
         self.track_by_path = {track["path"]: track for track in tracks}
 
@@ -528,10 +551,15 @@ class OpenWave(Gtk.Window):
         self.album_index = dict(album_map)
 
         self.library_folder = folder
+        self.is_scanning = False
+        
+        self.track_scroll.set_visible(True)
         self._save_state()
         self._refresh_sidebar()
         self._update_header_subtitle()
         self._apply_track_view()
+        
+        return False
 
     # ------------------------------------------------------------------
     # Sidebar
@@ -977,7 +1005,6 @@ class OpenWave(Gtk.Window):
 
         track = self.track_by_path.get(path) or read_audio_metadata(path)
 
-        # Atualização local da imagem da capa para que o MPRIS e o applet do sistema tenham acesso ao arquivo visual
         cover_path = self.base_dir / "current_cover.jpg"
         cover_data = track.get("cover_data")
         if cover_data:
@@ -1012,7 +1039,6 @@ class OpenWave(Gtk.Window):
         self._update_play_pause_icon()
         self._update_list_highlight()
 
-        # Dispara eventos MPRIS assim que muda a faixa
         self.mpris.notify_metadata()
         self.mpris.notify_status()
 
@@ -1192,7 +1218,14 @@ class OpenWave(Gtk.Window):
         self._shift_track(1)
 
     def on_search_changed(self, widget) -> None:
+        if self._search_timeout_id is not None:
+            GLib.source_remove(self._search_timeout_id)
+        self._search_timeout_id = GLib.timeout_add(300, self._do_search)
+
+    def _do_search(self) -> bool:
         self._apply_track_view()
+        self._search_timeout_id = None
+        return False
 
     def on_track_selected(self, listbox, row) -> None:
         if row and hasattr(row, "track_path"):
@@ -1248,7 +1281,14 @@ class OpenWave(Gtk.Window):
         show_about_dialog(self)
 
     def on_artist_filter_changed(self, widget) -> None:
+        if self._artist_search_timeout_id is not None:
+            GLib.source_remove(self._artist_search_timeout_id)
+        self._artist_search_timeout_id = GLib.timeout_add(300, self._do_artist_search)
+        
+    def _do_artist_search(self) -> bool:
         self._refresh_artist_browser()
+        self._artist_search_timeout_id = None
+        return False
 
     def on_artist_tracks_clicked(self, widget) -> None:
         if self.current_artist_name:

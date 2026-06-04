@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-OpenWave — ponto de entrada principal.
 
-Este arquivo é mantido para compatibilidade com o script de instalação
-e com o mecanismo de auto-atualização (que reescreve este arquivo).
-"""
 from __future__ import annotations
 
 import gi

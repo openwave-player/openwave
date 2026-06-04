@@ -68,8 +68,12 @@ class Player:
     def pause_or_resume(self) -> None:
         if self.is_playing:
             self._pipeline.set_state(Gst.State.PAUSED)
+            self._cancel_timer()
         else:
             self._pipeline.set_state(Gst.State.PLAYING)
+            if self._timer_id is None and self.on_progress_cb:
+                self._timer_id = GLib.timeout_add(1000, self._tick)
+                
         self.is_playing = not self.is_playing
 
     def stop(self) -> None:
