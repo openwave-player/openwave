@@ -83,6 +83,19 @@ class Player:
             self._pipeline.set_state(Gst.State.NULL)
         except Exception:
             pass
+            
+    def get_position_us(self) -> int:
+        """Retorna a posição atual em microssegundos (usado pelo MPRIS)."""
+        if not self.is_playing:
+            return 0
+        try:
+            suc, pos = self._pipeline.query_position(Gst.Format.TIME)
+            if suc and pos > 0:
+                # Gst.Format.TIME retorna nanossegundos, converter para microssegundos
+                return int(pos // 1000)
+        except Exception:
+            pass
+        return 0
 
     # ------------------------------------------------------------------
     # Progresso

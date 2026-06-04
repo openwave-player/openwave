@@ -15,6 +15,7 @@ from gi.repository import Gdk, GdkPixbuf, GLib, Gst, Gtk, Pango
 
 from .constants import APP_VERSION, AUDIO_EXTENSIONS
 from .dialogs import PlaylistDialog, show_about_dialog
+from .mpris import MPRISProvider
 from .player import Player
 from .updater import check_for_updates, download_and_restart
 from .utils import ensure_dir, read_audio_metadata
@@ -61,10 +62,11 @@ class OpenWave(Gtk.Window):
         self.user_queue: list[dict] = []
         self.play_history: list[str] = []
 
-        # Estado da faixa
+        # Estado da faixa e MPRIS
         self.selected_track_path: str | None = None
         self.current_track_path: str | None = None
         self.is_shuffle = False
+        self.current_cover_url = ""
 
         self.current_title = "Nenhuma faixa"
         self.current_artist = "OpenWave"
@@ -72,6 +74,7 @@ class OpenWave(Gtk.Window):
 
         # Inicialização
         self._load_state()
+        self.mpris = MPRISProvider(self)
         apply_css(APP_CSS)
         self._setup_header()
         self._player = Player()
@@ -974,10 +977,24 @@ class OpenWave(Gtk.Window):
 
         track = self.track_by_path.get(path) or read_audio_metadata(path)
 
+        # Atualização local da imagem da capa para que o MPRIS e o applet do sistema tenham acesso ao arquivo visual
+        cover_path = self.base_dir / "current_cover.jpg"
+        cover_data = track.get("cover_data")
+        if cover_data:
+            try:
+                cover_path.write_bytes(cover_data)
+                self.current_cover_url = f"file://{cover_path.absolute()}"
+            except Exception:
+                self.current_cover_url = ""
+        else:
+            if cover_path.exists():
+                cover_path.unlink()
+            self.current_cover_url = ""
+
         if push_history and self.current_track_path and self.current_track_path != path:
             self.play_history.append(self.current_track_path)
 
-        if not self._load_cover_from_bytes(track.get("cover_data"), 60):
+        if not self._load_cover_from_bytes(cover_data, 60):
             self._set_default_cover()
 
         self.current_title = track["title"]
@@ -995,11 +1012,16 @@ class OpenWave(Gtk.Window):
         self._update_play_pause_icon()
         self._update_list_highlight()
 
+        # Dispara eventos MPRIS assim que muda a faixa
+        self.mpris.notify_metadata()
+        self.mpris.notify_status()
+
     def stop_playback(self) -> None:
         self._player.stop()
         self.progress_bar.set_fraction(0.0)
         self.time_current.set_text("00:00")
         self._update_play_pause_icon()
+        self.mpris.notify_status()
 
     def _on_player_progress(self, fraction: float, pos_s: float, dur_s: float) -> None:
         self.progress_bar.set_fraction(fraction)
@@ -1098,6 +1120,7 @@ class OpenWave(Gtk.Window):
 
         if updated:
             GLib.idle_add(self._update_now_playing_ui)
+            GLib.idle_add(self.mpris.notify_metadata)
 
         try:
             if hasattr(taglist, "get_sample"):
@@ -1128,6 +1151,7 @@ class OpenWave(Gtk.Window):
         self.time_current.set_text("00:00")
         self._update_play_pause_icon()
         self._set_default_cover()
+        self.mpris.notify_status()
 
     # ------------------------------------------------------------------
     # Callbacks de controles
@@ -1142,6 +1166,7 @@ class OpenWave(Gtk.Window):
             return
         self._player.pause_or_resume()
         self._update_play_pause_icon()
+        self.mpris.notify_status()
 
     def on_shuffle_clicked(self, widget) -> None:
         self.is_shuffle = not self.is_shuffle

@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 # Versão do aplicativo
-APP_VERSION = "0.1.3"
+APP_VERSION = "0.1.4"
 
 # APIs e Endpoints do GitHub para Atualização
 GITHUB_RELEASES_API = "https://api.github.com/repos/openwave-player/openwave/releases/latest"
