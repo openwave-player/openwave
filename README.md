@@ -117,7 +117,8 @@ Este projeto é distribuído sob a Licença **MIT**. Veja o arquivo `LICENSE` (o
 **Mateus Calixto**
 
 * Contato: contato@mateuscalixto.com.br
-* GitHub: [openwave-player](https://github.com/openwave-player/openwave)
+* GitHub: [ogoncas](https://github.com/ogoncas)
+* Website: [mateuscalixto.com.br](https://mateuscalixto.com.br)
 
 *Inspiração visual: Linux Mint Desktop Team.*
 *Ícones Simbólicos: GNOME Project.*
