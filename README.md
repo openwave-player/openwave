@@ -1,6 +1,6 @@
 # OpenWave
 
-![Versão](https://img.shields.io/badge/versão-0.1.3-blue.svg)
+![Versão](https://img.shields.io/badge/versão-0.1.5-blue.svg)
 ![Licença](https://img.shields.io/badge/licença-MIT-green.svg)
 ![Plataforma](https://img.shields.io/badge/plataforma-Linux-lightgrey.svg)
 
